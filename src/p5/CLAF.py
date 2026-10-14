@@ -12,13 +12,10 @@ class CLAF(torch.nn.Module):
 
         self.softmax = torch.nn.Softmax()
         self.weights = torch.rand(n_weights, requires_grad=True)
-
-    def __transform_rows(self, X):
-        return torch.stack([self.function(n+1)(X[n]) for n in range(self.n_weights)], dim=0)
     
-    def forward(self, x):
-        X = x.repeat(n_weights, 1) 
-        self.__transform_rows(X)
-        return self.softmax(weights) @ X
-
-
+    def forward(self, X):
+        Xpand = X.unsqueeze(2).repeat(1, 1, self.n_weights)
+        Xview = Xpand.view(Xpand.shape[0]*Xpand.shape[1], Xpand.shape[2]).transpose(0, 1)
+        for i in range(Xview.shape[0]):
+            Xview[i] = self.function(i+1)(Xview[i])
+        return Xpand @ self.softmax(self.weights)
