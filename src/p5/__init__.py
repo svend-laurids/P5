@@ -114,55 +114,6 @@ def graph_degrees(graph):
         degrees[edge] += 1
     return degrees
 
-def process(dataset, path):
-    type_annotated_dataset = [] 
-
-    for i, graph in enumerate(dataset):
-        graph['node_type'] = graph.pop('z')
-
-        graph.degrees = graph_degrees(graph)
-
-        graph.graphlet4 = torch.tensor(graph_graphlets(graph, 4))
-                    
-        graph.graphlet5 = torch.tensor(graph_graphlets(graph, 5))
-
-        graph.edge_type = torch.zeros(graph.edge_attr.shape[0])
-        for n_edge, edge in enumerate(graph.edge_attr):
-            for n_attr, attr in enumerate(edge):
-                if attr > 0:
-                    graph.edge_type[n_edge] = n_attr
-
-        type_annotated_dataset.append(graph)
-        if i % round(dataset.len()/100.0) == 0:
-            print(f"{(i/dataset.len())*100.0}%")
-            print(f"{graph}")
-
-    InMemoryDataset.save(type_annotated_dataset, path)
-    print("Done!")
-
-def stats(dataset):
-    stats = { 
-        degree : 0,
-        graphlet4 : 0,
-        graphlet5 : 0 
-    }
-
-    for i, graph in enumerate(dataset):
-        for degree in graph.degrees:
-            stats['degree'] = stats['degree'] + 1
-
-        for node in graph.graphlet4:
-            for n, motif in enumerate(node):
-                if motif > 0:
-                    stats['graphlet4'] = stats['graphlet4'] + 1
-                    
-        for node in graph.graphlet5:
-            for n, motif in enumerate(node):
-                if motif > 0:
-                    stats['graphlet5'] = stats['graphlet5'] + 1
-
-    return stats
-
 
 def load(path):
     dataset = InMemoryDataset()
@@ -170,11 +121,9 @@ def load(path):
     return dataset 
 
 def main() -> None:
-    #dataset = QM9(root=path_QM9)
-    #process(dataset, path_QM9_type_annotated)
     
-    dataset = load(path_QM9_type_annotated)
-    print(dataset[0]['node_type'])
+    #dataset = load(path_QM9_type_annotated)
+    #print(dataset[0]['node_type'])
     #tgcn = TGCN(1, 1) #, 1)
     #tgcn(dataset[0])
       

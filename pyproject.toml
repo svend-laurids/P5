@@ -1,5 +1,5 @@
 [project]
-name = "orgchem"
+name = "p5"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -18,7 +18,10 @@ dependencies = [
 ]
 
 [project.scripts]
-orgchem = "orgchem:main"
+p5 = "p5:main"
+download = "download:main"
+process = "process:main"
+stats = "stats:main"
 
 [build-system]
 requires = ["uv_build>=0.12.24,<0.13.0"]
