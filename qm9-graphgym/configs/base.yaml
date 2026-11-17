@@ -1,0 +1,41 @@
+out_dir: results
+metric_best: mae
+metric_agg: argmin
+dataset:
+  format: PyG
+  name: QM9
+  dir: ./data
+  task: graph
+  task_type: regression
+  transductive: False
+  split: [0.84, 0.08, 0.08]
+  node_encoder: False
+  edge_encoder: False
+train:
+  batch_size: 128
+  eval_period: 1
+  ckpt_period: 100
+model:
+  type: gnn
+  loss_fun: l1
+  graph_pooling: add
+gnn:
+  layers_pre_mp: 1
+  layers_mp: 4
+  layers_post_mp: 2
+  dim_inner: 64
+  layer_type: typedconv
+  stage_type: skipsum
+  batchnorm: True
+  act: relu
+  dropout: 0.0
+  agg: add
+  weight_sharing: shared
+  l2norm: False
+qm9:
+  target: 4
+  subset: 2000
+optim:
+  optimizer: adam
+  base_lr: 0.001
+  max_epoch: 5
