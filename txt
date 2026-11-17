@@ -1,26 +1,34 @@
-/home/svend/programmering/orgchem/.venv/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+/home/svend/programmering/P5/.venv/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
   warnings.warn(
 Traceback (most recent call last):
-  File "/home/svend/programmering/orgchem/.venv/bin/orgchem", line 10, in <module>
+  File "/home/svend/programmering/P5/.venv/bin/tgnn", line 10, in <module>
     sys.exit(main())
              ~~~~^^
-  File "/home/svend/programmering/orgchem/src/orgchem/__init__.py", line 173, in main
-    process(dataset, path_QM9_type_annotated)
-    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/svend/programmering/orgchem/src/orgchem/__init__.py", line 154, in process
-    InMemoryDataset.save(
-    ~~~~~~~~~~~~~~~~~~~~^
-        {
-        ^
+  File "/home/svend/programmering/P5/src/tgnn/__init__.py", line 27, in main
+    print(tgnn4(dataset[3]))
+          ~~~~~^^^^^^^^^^^^
+  File "/home/svend/programmering/P5/.venv/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1787, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/svend/programmering/P5/.venv/lib/python3.14/site-packages/torch/nn/modules/module.py", line 1798, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/svend/programmering/P5/src/tgnn/tgnn2.py", line 77, in forward
+    return self.propagate(graph.edge_index,
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+                          x=graph.x,
+                          ^^^^^^^^^^
+    ...<3 lines>...
+                          node_graphlet4=graph.graphlet4,
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                          node_graphlet5=graph.graphlet5)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/tgnn.tgnn2_BondAtomSumTGNN_propagate_dy3id3o4.py", line 232, in propagate
+    out = self.message(
+        x_j=kwargs.x_j,
     ...<5 lines>...
-        path
-        ^^^^
+        node_graphlet5=kwargs.node_graphlet5,
     )
-    ^
-  File "/home/svend/programmering/orgchem/.venv/lib/python3.14/site-packages/torch_geometric/data/in_memory_dataset.py", line 126, in save
-    data, slices = cls.collate(data_list)
-                   ~~~~~~~~~~~^^^^^^^^^^^
-  File "/home/svend/programmering/orgchem/.venv/lib/python3.14/site-packages/torch_geometric/data/in_memory_dataset.py", line 156, in collate
-    data_list[0].__class__,
-    ~~~~~~~~~^^^
-KeyError: 0
+  File "/home/svend/programmering/P5/src/tgnn/tgnn2.py", line 87, in message
+    messages_atom = torch.bmm(x_j.unsqueeze(1), self.weights_atom[node_type[edge_index[1]]]).squeeze(1)
+                                                                            ^^^^^^^^^^
+NameError: name 'edge_index' is not defined

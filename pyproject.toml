@@ -8,21 +8,36 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "deepsnap>=0.2.1",
     "matplotlib>=3.11.2",
     "networkx>=3.7",
+    "notebook>=7.6.5",
+    "numpy>=2.5.4",
+    "ogb>=1.3.6",
     "orbit-count>=0.1.0",
+    "pandas>=3.1.1",
+    "pyyaml>=6.0.3",
+    "scikit-learn>=1.9.1",
     "scipy>=1.18.1",
+    "seaborn>=0.13.2",
     "tabulate>=0.10.0",
+    "tensorboardx>=2.6.5",
     "torch>=2.15.0",
-    "torch-geometric>=2.8.1",
+    "torch-geometric[graphgym]>=2.8.1",
+    "yacs>=0.1.8",
 ]
 
 [project.scripts]
 p5 = "p5:main"
 download = "download:main"
 process = "process:main"
+gym = "gym:main"
 stats = "stats:main"
+tgnn = "tgnn:main"
 
 [build-system]
 requires = ["uv_build>=0.12.24,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv]
+package = true

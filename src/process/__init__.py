@@ -26,19 +26,31 @@ def process(dataset, path):
     type_annotated_dataset = [] 
 
     for i, graph in enumerate(dataset):
-        graph['node_type'] = graph.pop('z')
-
         graph.degrees = graph_degrees(graph)
 
         graph.graphlet4 = torch.tensor(graph_graphlets(graph, 4))
                     
         graph.graphlet5 = torch.tensor(graph_graphlets(graph, 5))
 
-        graph.edge_type = torch.zeros(graph.edge_attr.shape[0])
+        graph.edge_type = torch.zeros(graph.edge_attr.shape[0], dtype=torch.int)
         for n_edge, edge in enumerate(graph.edge_attr):
             for n_attr, attr in enumerate(edge):
                 if attr > 0:
                     graph.edge_type[n_edge] = n_attr
+
+        graph.node_type = torch.zeros_like(graph.z)
+        for n_z, z in enumerate(graph.z):
+            match z:
+                case 0:
+                    graph.node_type[n_z] = 0
+                case 6:
+                    graph.node_type[n_z] = 1
+                case 7:
+                    graph.node_type[n_z] = 2
+                case 8:
+                    graph.node_type[n_z] = 3
+                case 9:
+                    graph.node_type[n_z] = 4 
 
         type_annotated_dataset.append(graph)
         if i % round(dataset.len()/100.0) == 0:
