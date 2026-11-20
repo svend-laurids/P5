@@ -1,122 +1,100 @@
 import torch
 import torch.nn.functional as F
 
-import torch_geometric.graphgym.register as register
 from torch_geometric.graphgym.config import cfg
-from torch_geometric.graphgym.init import init_weights
-from torch_geometric.graphgym.models.layer import (
-    BatchNorm1dNode,
-    GeneralLayer,
-    GeneralMultiLayer,
-    new_layer_config,
-)
-from torch_geometric.graphgym.register import register_stage
 
-from msg import LinearMessenger, BondMessenger, AtomMessenger, BondAtomSumMessenger, 
+import torch_geometric.graphgym.register as register
+from torch_geometric.graphgym.register import register_stage, register_network
 
-class TGNNMessagePassing(MessagePassing) -> GeneralLayer:
-    def __init__(self, dim_in: int, dim_out: int, has_act: bool = True):
+from torch_geometric.nn import global_mean_pool
+
+class TGNNLayer(torch.nn.Module):
+    def __init__(self, dim_in, dim_out):
         super().__init__()
+        #match cfg.tgnn_config.messagepassing:
+        #    case 'linear':
+        #        self.add_module('messagepassing', LinearTGNN(dim_in, dim_out))
+        #    case 'bond':
+        #        self.add_module('messagepassing', BondTGNN(dim_in, dim_out))
+        #    case 'atom':
+        #        self.add_module('messagepassing', AtomTGNN(dim_in, dim_out))
+        #    case 'atombondsum':
+        #        self.add_module('messagepassing', AtomBondSumTGNN(dim_in, dim_out))
+        #    case _:
+        #        print(f"Error: cfg.tgnn_config.messagepassing = {cfg.tgnn_config.messagepassing}, which is not a valid messenger")
+        self.add_module('messagepassing', register.layer_dict[cfg.tgnn_config.messagepassing](dim_in, dim_out))
+        if cfg.tgnn_config.has_batchnorm:
+            self.add_module('batchnorm', torch.nn.BatchNorm1d(dim_out, eps=cfg.tgnn_config.batchnorm_epsilon, momentum=cfg.tgnn_config.momentum))
+        if cfg.tgnn_config.has_dropout and cfg.tgnn_config.dropout > 0.0:
+            self.add_module('dropout', torch.nn.Dropout(p=cfg.tgnn_config.dropout)) #, inplace=layer_config.mem_inplace))
+        if cfg.tgnn_config.has_activation:
+            self.add_module('activation', register.act_dict[cfg.tgnn_config.activation]())
 
-    def forward(self, graph):
-        return self.propagate(graph.edge_index, 
-                              x=graph.x, 
-                              edge_type=graph.edge_type, 
-                              node_type=graph.node_type,
-                              node_degree=graph.degrees,
-                              node_graphlet4=graph.graphlet4,
-                              node_graphlet5=graph.graphlet5) 
+    def forward(self, batch):
+        batch.x = self.messagepassing(batch)
 
-    def message(self, x_j, x):
-        return x_j
+        if cfg.tgnn_config.has_batchnorm:
+            batch.x = self.batchnorm(batch.x)
 
-    def aggregate(self, 
-                  x, 
-                  index, 
-                  edge_index, 
-                  ptr=None, 
-                  dim_size=None, 
-                  dim=-2, 
-                  edge_type=None, 
-                  node_type=None,
-                  node_degrees=None,
-                  node_graphlet4=None,
-                  node_graphlet5=None):
+        if cfg.tgnn_config.has_dropout and cfg.tgnn_config.dropout > 0.0:
+            batch.x = self.dropout(batch.x)
 
-        return self.messenger.message(x,
-                                      edge_index, 
-                                      edge_type, 
-                                      node_type, 
-                                      node_degrees, 
-                                      node_graphlet4, 
-                                      node_graphlet5)
-    
-def TGNNLayer(dim_in: int, dim_out: int, has_act: bool = True) -> GeneralLayer:
-    return GeneralLayer(
-        cfg.gnn.layer_type,
-        layer_config=new_layer_config(
-            dim_in,
-            dim_out,
-            1,
-            has_act=has_act,
-            has_bias=False,
-            cfg=cfg,
-        ),
-    )
+        if cfg.tgnn_config.has_activation:
+            batch.x = self.activation(batch.x)
 
-@register_head('readout')
-class Readout(torch.nn.Module):
+        return batch
 
+#@register_head('readout')
+#class Readout(torch.nn.Module):
 
-@register_stage('stack')
-@register_stage('skipsum')
-@register_stage('skipconcat')
-class TMPNN(torch.nn.Module):
+@register_stage('tgnn_stack')
+@register_stage('tgnn_skipsum')
+@register_stage('tgnn_skipconcat')
+class TGNNStage(torch.nn.Module):
     def __init__(self, dim_in, dim_out, num_layers):
         super().__init__()
         self.num_layers = num_layers
         for i in range(num_layers):
-            if cfg.tgnn.stage_type == 'skipconcat':
+            if cfg.tgnn_config.stage_type == 'tgnn_skipconcat':
                 d_in = dim_in if i == 0 else dim_in + i * dim_out
             else:
                 d_in = dim_in if i == 0 else dim_out
-            match cfg.tgnn.layer_type:
-                case 'linear':
-                    self.add_module(f'layer{i}', LinearTGNN(dim_in, dim_out))
-                case 'bond':
-                    self.add_module(f'layer{i}', BondTGNN(dim_in, dim_out))
-                case 'atom':
-                    self.add_module(f'layer{i}', AtomTGNN(dim_in, dim_out))
-                case 'atombondsum':
-                    self.add_module(f'layer{i}', AtomBondSumTGNN(dim_in, dim_out))
-                case _:
-                    print(f"Error: cfg.tgnn.msg = {cfg.tgnn.msg}, which is not a valid messenger")
-
+            self.add_module(f'layer{i}', TGNNLayer(d_in, dim_out))
 
     def forward(self, batch):
+        print(batch)
+
         for i, layer in enumerate(self.children()):
             x = batch.x
             batch = layer(batch)
-            if cfg.tgnn.stage_type == 'skipsum':
+            if cfg.tgnn_config.stage_type == 'tgnn_skipsum':
                 batch.x = x + batch.x
-            elif (cfg.tgnn.stage_type == 'skipconcat' and i < self.num_layers - 1):
+            elif (cfg.tgnn_config.stage_type == 'tgnn_skipconcat' and i < self.num_layers - 1):
                 batch.x = torch.cat([x, batch.x], dim=1)
-        if cfg.tgnn.l2norm:
+
+        if cfg.tgnn_config.l2norm:
             batch.x = F.normalize(batch.x, p=2, dim=-1)
+
         return batch
 
+                               
+@register_network('tgnn_network')
 class TGNN(torch.nn.Module):
-    def __init__(self, dim_in: int, dim_out: int, **kwargs):
+    def __init__(self, dim_in, dim_out, **kwargs):
         super().__init__()
 
-        TMPNN = register.stage_dict[cfg.tgnn.stage_type]
-        Readout = register.head_dict[cfg.tgnn.head]
+        TMPNN = register.stage_dict[cfg.tgnn_config.stage_type]
+        #Readout = register.head_dict[cfg.tgnn_config.head]
 
-        self.mpnn = TMPNN(dim_in=dim_in, dim_out=cfg.tgnn.dim_inner, num_layers=cfg.tgnn.layers_mp)
-        self.readout = Readout(dim_in=cfg.tgnn.dim_inner, dim_out=dim_out)
+        self.mpnn = TMPNN(dim_in=cfg.tgnn_config.dim_in, dim_out=cfg.tgnn_config.dim_inner, num_layers=cfg.tgnn_config.num_layers)
+        #self.readout = Readout(dim_in=cfg.tgnn_config.dim_inner, dim_out=dim_out)
 
     def forward(self, batch):
+        print(batch)
+        print(batch.x)
         for module in self.children(): 
             batch = module(batch)
 
-        return batch
+        x = global_mean_pool(batch.x, batch.batch)
+
+        return x, batch.y

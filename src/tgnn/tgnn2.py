@@ -38,7 +38,10 @@ class BondTGNN(MessagePassing):
                               node_graphlet4=graph.graphlet4,
                               node_graphlet5=graph.graphlet5) 
 
-    def message(self, x_j, x, edge_type=None, node_type=None, node_degree=None, node_graphlet4=None, node_graphlet5=None):
+    def message(self, x_j, x, index, edge_index, edge_type=None, node_type=None, node_degree=None, node_graphlet4=None, node_graphlet5=None):
+        print(edge_type)
+        print(edge_index)
+        print(index)
         messages = torch.bmm(x_j.unsqueeze(1), self.weights[edge_type]).squeeze(1) 
         return messages
 
@@ -88,3 +91,5 @@ class BondAtomSumTGNN(MessagePassing):
 
     def aggregate(self, x, index, edge_index, ptr=None, dim_size=None, dim=-2, node_type=None):
         return scatter(x, edge_index[1], dim=0, dim_size=node_type.size(0), reduce='sum')
+
+

@@ -7,30 +7,8 @@ from torch_geometric.utils import scatter
 
 from torch_geometric.graphgym.config import cfg
 from torch_geometric.graphgym.register import register_layer
-from torch_geometric.nn.conv import MessagePassing
-from torch_geometric.nn.inits import glorot, zeros
 
-# Note: A registered GNN layer should take 'batch' as input
-# and 'batch' as output
-
-@register_layer('tgnn')
-class TGNN(torch.nn.Module):
-    def __init__(self, layer_config: LayerConfig, **kwargs):
-        super().__init__()
-        self.model = nn.Linear(
-            layer_config.dim_in,
-            layer_config.dim_out,
-            bias=layer_config.has_bias,
-        )
-
-    def forward(self, batch):
-        if isinstance(batch, torch.Tensor):
-            batch = self.model(batch)
-        else:
-            batch.x = self.model(batch.x)
-        return batch
-
-@register_layer('lineartgnn')
+@register_layer('tgnn_linear')
 class LinearTGNN(MessagePassing):
     def __init__(self, dim_in, dim_out):
         super().__init__()
@@ -50,9 +28,9 @@ class LinearTGNN(MessagePassing):
         return messages
 
     def aggregate(self, x, index, edge_index, ptr=None, dim_size=None, dim=-2, node_type=None):
-        return scatter(x, edge_index[1], dim=0, dim_size=node_type.size(0), reduce='sum')
+        return scatter(x, edge_index[1], dim=0, dim_size=node_type.size(0), reduce=cfg.tgnn_config.aggregation)
 
-@register_layer('bondtgnn')
+@register_layer('tgnn_bond')
 class BondTGNN(MessagePassing):
     def __init__(self, dim_in, dim_out):
         super().__init__()
@@ -72,9 +50,9 @@ class BondTGNN(MessagePassing):
         return messages
 
     def aggregate(self, x, index, edge_index, ptr=None, dim_size=None, dim=-2, node_type=None):
-        return scatter(x, edge_index[1], dim=0, dim_size=node_type.size(0), reduce='sum')
+        return scatter(x, edge_index[1], dim=0, dim_size=node_type.size(0), reduce=cfg.tgnn_config.aggregation)
 
-@register_layer('atomtgnn')
+@register_layer('tgnn_atom')
 class AtomTGNN(MessagePassing):
     def __init__(self, dim_in, dim_out):
         super().__init__()
@@ -94,9 +72,9 @@ class AtomTGNN(MessagePassing):
         return messages
 
     def aggregate(self, x, index, edge_index, ptr=None, dim_size=None, dim=-2, node_type=None):
-        return scatter(x, edge_index[1], dim=0, dim_size=node_type.size(0), reduce='sum')
+        return scatter(x, edge_index[1], dim=0, dim_size=node_type.size(0), reduce=cfg.tgnn_config.aggregation)
 
-@register_layer('atombondsumtgnn')
+@register_layer('tgnn_atombondsum')
 class AtomBondSumTGNN(MessagePassing):
     def __init__(self, dim_in, dim_out):
         super().__init__()
@@ -118,4 +96,4 @@ class AtomBondSumTGNN(MessagePassing):
         return messages_bond + messages_atom
 
     def aggregate(self, x, index, edge_index, ptr=None, dim_size=None, dim=-2, node_type=None):
-        return scatter(x, edge_index[1], dim=0, dim_size=node_type.size(0), reduce='sum')
+        return scatter(x, edge_index[1], dim=0, dim_size=node_type.size(0), reduce=cfg.tgnn_config.aggregation)

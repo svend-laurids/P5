@@ -11,22 +11,23 @@ train:
   eval_period: 20
   ckpt_period: 100
 model:
-  type: gnn
+  type: tgnn_network
   loss_fun: mse
   size_average: mean 
   edge_decoding: dot
   graph_pooling: add
-gnn:
-  layers_pre_mp: 0
-  layers_mp: 2
-  layers_post_mp: 0
-  dim_inner: 256
-  layer_type: tgnn
-  stage_type: stack
-  batchnorm: true
-  act: relu
+tgnn_config:
+  messagepassing: 'tgnn_linear'
+  num_layers: 2
+  dim_in: 11
+  dim_inner: 19
+  dim_out: 19
+  aggregation: 'sum'
+  activation: 'relu'
+  has_batchnorm: true
+  has_activation: true
+  has_dropout: true
   dropout: 0.0
-  agg: add
 optim:
   optimizer: adam
   base_lr: 0.01

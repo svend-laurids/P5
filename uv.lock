@@ -1883,7 +1883,7 @@ wheels = [
 [[package]]
 name = "p5"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "deepsnap" },
     { name = "matplotlib" },
